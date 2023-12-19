@@ -528,6 +528,23 @@ function tree:layout()
     tree = self,
     path = 'root'
   })
+
+  -- need to recalculate the size of root rect if scrolling is enabled
+  if self.scrollTarget then
+    local size = 0
+    if self.root.properties.direction == kDirectionVertical then      
+      for i=1, #self.root.childRects do
+        size = size + self.root.childRects[i].height        
+      end
+      rect.height = size
+    else 
+      for i=1, #self.root.childRects do
+        size = size + self.root.childRects[i].width        
+      end
+      rect.width = size
+    end
+  end
+
   self.rect = rect
 end
 

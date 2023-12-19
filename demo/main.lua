@@ -106,12 +106,11 @@ local function createMenu(ui)
   local text = ui.text
 
   return box({
-    maxWidth = 380,
+    maxHeight = 380,
     backgroundColor = gfx.kColorWhite,
     borderRadius = 9,
     border = 2,
     direction = playout.kDirectionHorizontal,
-    vAlign = playout.kAlignStretch,
     shadow = 8,
     shadowAlpha = 1/3,
     scroll = 1
@@ -151,6 +150,7 @@ local function createMenu(ui)
         paddingTop = 12,
         paddingBottom = 0,
         vAlign = playout.kAlignEnd,
+        width = 240
       }, { 
         box({ style = button }, { text("cancel", { id = "no", stroke = 2, tabIndex = 1 } ) } ),
         box({ flex = 1 }),
