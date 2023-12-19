@@ -18,6 +18,10 @@ local skipScrollTicks = 0
 -- The scroll offset
 local offset = 0;
 
+local pagePadding = 10
+local kDirectionVertical = 1
+local kDirectionHorizontal = 2
+
 -- local libs
 import "../playout.lua"
 -- import "test"
@@ -109,7 +113,8 @@ local function createMenu(ui)
     direction = playout.kDirectionHorizontal,
     vAlign = playout.kAlignStretch,
     shadow = 8,
-    shadowAlpha = 1/3
+    shadowAlpha = 1/3,
+    scroll = 1
   }, {
     box({
       padding = 12,
@@ -170,7 +175,7 @@ local function createPage(ui)
     vAlign = playout.kAlignStretch,
     shadow = 8,
     shadowAlpha = 1 / 3,
-    -- scroll = 1
+    scroll = 1
   }, {
     box({
       padding = 12,
@@ -250,14 +255,14 @@ function setup()
   playdate.inputHandlers.push(inputHandlers)
 
   -- setup menu
-  menu = playout.tree:build(createPage)
+  menu = playout.tree:build(createMenu)
   menu:computeTabIndex()
   menuImg = menu:draw()
   menuSprite = gfx.sprite.new(menuImg)
   local menuRect = menuSprite:getBoundsRect()
   local anchor  = getRectAnchor(menuRect, playout.kAnchorTopLeft)
 
-  menuSprite:moveTo(-anchor.x + 10, -anchor.y + 10)
+  menuSprite:moveTo(-anchor.x + pagePadding, -anchor.y + pagePadding)
   menuSprite:add()
 
   -- setup bg sprite
@@ -296,15 +301,21 @@ end
 -- frame callback
 function playdate.update()
   -- if menuTimer.timeLeft > 0 then
-  --   menuSprite:moveTo(200, menuTimer.value)
+  --   menuSprite:moveTo(200, menuTimer.value)\
   --   menuSprite:update()
   -- end
+  
+  local menuPosition = { x = menuSprite.x, y = menuSprite.y }
+  if menu.scrollTarget then
+    if menu.scrollTarget.properties.direction == kDirectionHorizontal  then
+      menuPosition.x = (menuSprite.width / 2) + offset + pagePadding
+    else 
+      menuPosition.y = (menuSprite.height / 2) + offset + pagePadding 
+    end
+  end
 
-  local offset_y = offset - previousCrankOffset
-
-  local scrolly = (menuSprite.height / 2) + offset + 10
-  menuSprite:moveTo(menuSprite.x, scrolly)
-    menuSprite:update()
+  menuSprite:moveTo(menuPosition.x, menuPosition.y)
+  menuSprite:update()
 
   setPointerPos()
   pointer:moveTo(pointerPos.x, pointerPos.y)

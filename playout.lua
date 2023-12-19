@@ -492,11 +492,16 @@ function tree.new(root, options)
     img = nil,
     sprite = nil,
     useCache = options.useCache,
-    tabIndex = nil
+    tabIndex = nil    
   }
   if o.useCache then
     o.cache = {}
   end
+
+  if o.root.properties.scroll then
+    o.scrollTarget = root    
+  end
+
   setmetatable(o, tree)
 
   -- set parent-child relationships
