@@ -3,12 +3,24 @@ import "CoreLibs/object"
 import "CoreLibs/graphics"
 import "CoreLibs/sprites"
 import "CoreLibs/timer"
+import "CoreLibs/crank"
 
 local gfx <const> = playdate.graphics
 
+-- The speed of scrolling via the crank
+local CRANK_SCROLL_SPEED <const> = 1.2
+-- The current speed modifier for the crank
+local crankSpeedModifier = 1
+-- The crank offset from before skipScrollTicks was set
+local previousCrankOffset = 0
+-- The number of ticks to skip modulating the scroll offset
+local skipScrollTicks = 0
+-- The scroll offset
+local offset = 0;
+
 -- local libs
 import "../playout.lua"
-import "test"
+-- import "test"
 
 fonts = {
   normal = gfx.getSystemFont(gfx.font.kVariantNormal),
@@ -77,12 +89,12 @@ local function prevMenuItem()
   setPointerPos()
 end
 
-for f = 1, #testRunner.failedDetails do
-  local result = testRunner.failedDetails[f];
-  print(result.group .. ' > ' .. result.name)
-  print("  expected: " .. tostring(result.expected))
-  print("  actual: " .. tostring(result.actual))
-end
+-- for f = 1, #testRunner.failedDetails do
+--   local result = testRunner.failedDetails[f];
+--   print(result.group .. ' > ' .. result.name)
+--   print("  expected: " .. tostring(result.expected))
+--   print("  actual: " .. tostring(result.actual))
+-- end
 
 local function createMenu(ui)
   local box = ui.box
@@ -143,6 +155,57 @@ local function createMenu(ui)
   })
 end
 
+
+local function createPage(ui)
+  local box = ui.box
+  local image = ui.image
+  local text = ui.text
+
+  return box({
+    maxWidth = 380,
+    backgroundColor = gfx.kColorWhite,
+    borderRadius = 9,
+    border = 2,
+    direction = playout.Vertical,
+    vAlign = playout.kAlignStretch,
+    shadow = 8,
+    shadowAlpha = 1 / 3,
+    -- scroll = 1
+  }, {
+    box({
+      padding = 12,
+      spacing = 10,
+      backgroundColor = gfx.kColorBlack,
+      backgroundAlpha = 7 / 8,
+      borderRadius = 9,
+      border = 2
+    }, { text("playout", { stroke = 4 }) }),
+    box({
+      spacing = 12,
+      paddingTop = 16,
+      paddingLeft = 20,
+      -- scroll=1
+      -- hAlign = playout.kAlignStart
+    }, {
+      text(
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. More Text will this stretch fur consectetur adipiscing elit. More Text will this stretch fur consectetur adipiscing elit. More Text will this stretch fur consectetur adipiscing elit. More Text will this stretch further down the page or will it not I don't knwo ow hwowhjioewioweoiew."),
+      text(testResultMessage),
+      box({
+        direction = playout.kDirectionHorizontal,
+        spacing = 12,
+        paddingLeft = 16,
+        paddingTop = 12,
+        paddingBottom = 0,
+        vAlign = playout.kAlignEnd,
+      }, {
+        box({ style = button }, { text("cancel", { id = "no", stroke = 2, tabIndex = 1 }) }),
+        box({ flex = 1 }),
+        box({ style = button }, { text("okay", { id = "yes", stroke = 2, tabIndex = 2 }) }),
+      })
+    })
+  })
+end
+
 local inputHandlers = {
   rightButtonDown = nextMenuItem,
   downButtonDown = nextMenuItem,
@@ -159,28 +222,42 @@ local inputHandlers = {
       menuSprite:update()
     end
     setPointerPos()
+  end,
+  cranked = function(change, acceleratedChange)
+    if skipScrollTicks > 0 then
+      skipScrollTicks = skipScrollTicks - 1
+      offset = offset - previousCrankOffset
+    else
+      offset = offset - change * CRANK_SCROLL_SPEED * crankSpeedModifier
+      previousCrankOffset = change * CRANK_SCROLL_SPEED * crankSpeedModifier
+    end
+    -- print('offset', offset)
+    
   end
 }
 
 function setup()
   -- run tests (see test.lua)
-  testRunner:run()
-  testResultMessage = "Tests: *" .. testRunner.passed .. "/" .. testRunner.total .. "* passed."
-  if testRunner.passed < testRunner.total then
-    testResultMessage = testResultMessage .. " Oops"
-  else
-    testResultMessage = testResultMessage .. " Nice!"
-  end
+  -- testRunner:run()
+  -- testResultMessage = "Tests: *" .. testRunner.passed .. "/" .. testRunner.total .. "* passed."
+  -- if testRunner.passed < testRunner.total then
+  --   testResultMessage = testResultMessage .. " Oops"
+  -- else
+  --   testResultMessage = testResultMessage .. " Nice!"
+  -- end
 
   -- attach input handlers
   playdate.inputHandlers.push(inputHandlers)
 
   -- setup menu
-  menu = playout.tree:build(createMenu)
+  menu = playout.tree:build(createPage)
   menu:computeTabIndex()
   menuImg = menu:draw()
   menuSprite = gfx.sprite.new(menuImg)
-  menuSprite:moveTo(200, 400)
+  local menuRect = menuSprite:getBoundsRect()
+  local anchor  = getRectAnchor(menuRect, playout.kAnchorTopLeft)
+
+  menuSprite:moveTo(-anchor.x + 10, -anchor.y + 10)
   menuSprite:add()
 
   -- setup bg sprite
@@ -209,18 +286,31 @@ function setup()
   -- setup menu animation
   menuTimer = playdate.timer.new(500, 400, 100, playdate.easingFunctions.outCubic)
   menuTimer.timerEndedCallback = setPointerPos
+
+  -- Reset the crank position
+  offset = 0
+  previousCrankOffset = 0
+  skipScrollTicks = 0
 end
 
 -- frame callback
 function playdate.update()
-  if menuTimer.timeLeft > 0 then
-    menuSprite:moveTo(200, menuTimer.value)
-    menuSprite:update()
-  end
+  -- if menuTimer.timeLeft > 0 then
+  --   menuSprite:moveTo(200, menuTimer.value)
+  --   menuSprite:update()
+  -- end
 
-  pointer:moveTo(
-    pointerPos:offsetBy(pointerTimer.value, 0)
-  )
+  local offset_y = offset - previousCrankOffset
+
+  local scrolly = (menuSprite.height / 2) + offset + 10
+  menuSprite:moveTo(menuSprite.x, scrolly)
+    menuSprite:update()
+
+  setPointerPos()
+  pointer:moveTo(pointerPos.x, pointerPos.y)
+  -- pointer:moveTo(
+  --   pointerPos:offsetBy(pointerTimer.value, 0)
+  -- )
   pointer:update()
 
   playdate.timer.updateTimers()

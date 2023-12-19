@@ -68,8 +68,8 @@ box.__index = box
 local defaultBoxProperties = {
   minWidth = 1,
   minHeight = 1,
-  maxWidth = 400,
-  maxHeight = 240,
+  maxWidth = math.huge,
+  maxHeight = math.huge,
   width = nil,
   height = nil,
   scroll = false,
@@ -520,8 +520,6 @@ end
 
 function tree:layout()
   local rect = self.root:layout({
-    maxWidth = 400,
-    maxHeight = 240,
     tree = self,
     path = 'root'
   })
