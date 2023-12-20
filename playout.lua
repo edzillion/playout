@@ -533,15 +533,16 @@ function tree:layout()
   if self.scrollTarget then
     local size = 0
     if self.root.properties.direction == kDirectionVertical then      
-      for i=1, #self.root.childRects do
+      for i = 1, #self.root.childRects do
         size = size + self.root.childRects[i].height        
       end
-      rect.height = size
+
+      rect.height = size + self.root.properties.padding * 3
     else 
-      for i=1, #self.root.childRects do
+      for i = 1, #self.root.childRects do
         size = size + self.root.childRects[i].width        
       end
-      rect.width = size
+      rect.width = size + self.root.properties.padding * 3
     end
   end
 
