@@ -562,8 +562,8 @@ function tree.new(root, options)
   return o
 end
 
-function tree:build(builder)
-  return tree.new(builder(treeBuilders))
+function tree:build(target, builder, treeTable)
+  return tree.new(builder(target, treeBuilders, treeTable))
 end
 
 function tree:layout()
