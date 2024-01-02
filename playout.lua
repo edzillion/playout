@@ -290,6 +290,9 @@ function box:layout(context)
           child.height = innerHeight
         end
       end
+      print('child offset', x, y)
+      yOffset = yOffset + y
+      print('yOffset', yOffset)
       child:offset(x, y)
     end
 
@@ -579,13 +582,12 @@ function tree:layout()
       for i = 1, #self.root.childRects do
         size = size + self.root.childRects[i].height        
       end
-
-      rect.height = size + self.root.properties.padding * 3
+      rect.height = size + self.root.properties.padding * 2 + (self.root.properties.spacing * #self.root.childRects - 1)
     else 
       for i = 1, #self.root.childRects do
         size = size + self.root.childRects[i].width        
       end
-      rect.width = size + self.root.properties.padding * 3
+      rect.width = size + self.root.properties.padding * 2 + (self.root.properties.spacing * #self.root.childRects - 1)
     end
   end
 
