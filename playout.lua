@@ -290,9 +290,6 @@ function box:layout(context)
           child.height = innerHeight
         end
       end
-      print('child offset', x, y)
-      yOffset = yOffset + y
-      print('yOffset', yOffset)
       child:offset(x, y)
     end
 

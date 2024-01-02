@@ -1,132 +1,230 @@
+-- sdk libs
+import "CoreLibs/object"
+import "CoreLibs/graphics"
+import "CoreLibs/sprites"
+import "CoreLibs/timer"
+
 local gfx <const> = playdate.graphics
-local MDTree = import 'mdTree'
 
+-- local libs
 import "../playout.lua"
- 
--- The speed of scrolling via the crank
-local CRANK_SCROLL_SPEED <const> = 1.2
--- The current speed modifier for the crank
-local crankSpeedModifier = 1
--- The crank offset from before skipScrollTicks was set
-local previousCrankOffset = 0
--- The number of ticks to skip modulating the scroll offset
-local skipScrollTicks = 0
--- The scroll offset
-local offset = 0;
+import "test"
 
-local crankChange = 0
-
-local currentPage
-
-local ctrldFontFamily = {
-  [playdate.graphics.font.kVariantNormal] = 'fonts/ctrld/ctrld-fixed-16',
-  [playdate.graphics.font.kVariantBold] = 'fonts/ctrld/ctrld-fixed-16b',
-  [playdate.graphics.font.kVariantItalic] = 'fonts/ctrld/ctrld-fixed-16i'
+fonts = {
+  normal = gfx.getSystemFont(gfx.font.kVariantNormal),
+  bold = gfx.getSystemFont(gfx.font.kVariantBold)
 }
 
-
-local scientificaFontFamily = {
-  [playdate.graphics.font.kVariantNormal] = 'fonts/scientifica/scientifica-11',
-  [playdate.graphics.font.kVariantBold] = 'fonts/scientifica/scientificaBold-11',
-  [playdate.graphics.font.kVariantItalic] = 'fonts/scientifica/scientificaItalic-11'
+local button = {
+  padding = 4,
+  paddingLeft = 16,
+  borderRadius = 12,
+  border = 2,
+  shadow = 3,
+  shadowAlpha = 1 / 4,
+  backgroundColor = gfx.kColorWhite,
+  font = fonts.bold
 }
 
-local roobertFontFamily = {
-  [playdate.graphics.font.kVariantNormal] = 'fonts/roobert/Roobert-11-Medium',
-  [playdate.graphics.font.kVariantBold] = 'fonts/roobert/Roobert-11-Bold',
-  [playdate.graphics.font.kVariantItalic] = 'fonts/roobert/Roobert-11-Medium-Halved'
+local buttonHover = {
+  padding = 4,
+  paddingLeft = 16,
+  borderRadius = 12,
+  border = 2,
+  shadow = 3,
+  shadowAlpha = 1 / 4,
+  backgroundColor = gfx.kColorWhite,
+  backgroundAlpha = 1 / 2,
+  font = fonts.bold,
+  paddingBottom = 5,
+  shadow = 5,
 }
 
-local UWttyp0FontFamily = {
-  [playdate.graphics.font.kVariantNormal] = 'fonts/UW-ttyp0/UW-ttyp0',
-  [playdate.graphics.font.kVariantBold] = 'fonts/UW-ttyp0/UW-ttyp0-Bold',
-  [playdate.graphics.font.kVariantItalic] = 'fonts/UW-ttyp0/UW-ttyp0-Italic'
-}
+local menu = nil
+local menuImg, menuSprite, menuTimer
+local selectedIndex = 1
 
-local leggieFontFamily = {
-  [playdate.graphics.font.kVariantNormal] = 'fonts/leggie/leggie-18',
-  [playdate.graphics.font.kVariantBold] = 'fonts/leggie/leggie-18b',
-  [playdate.graphics.font.kVariantItalic] = 'fonts/leggie/leggie-18bi'
-}
+local pointer
+local pointerPos = nil
+local pointerTimer
 
-local styles = {
-  Header1 = {
-    padding = 12,
-    backgroundColor = gfx.kColorBlack,
-    backgroundAlpha = 7 / 8,
-    borderLeft = 2,
-    font = gfx.font.new('fonts/emerald_20')
-  },
+local logo = gfx.image.new("images/tmm-block.png")
 
-  Header3 = {
-    padding = 12,
-    backgroundColor = gfx.kColorBlack,
-    backgroundAlpha = 7 / 8,
+local testResultMessage
+local selected
+
+local function setPointerPos()
+  selected = menu.tabIndex[selectedIndex]
+  local menuRect = menuSprite:getBoundsRect()
+
+  pointerPos = getRectAnchor(selected.rect, playout.kAnchorCenterLeft):
+  offsetBy(getRectAnchor(menuRect, playout.kAnchorTopLeft):unpack())
+end
+
+local function nextMenuItem()
+  selectedIndex = selectedIndex + 1
+  if selectedIndex > #menu.tabIndex then
+    selectedIndex = 1
+  end
+  setPointerPos()
+end
+
+local function prevMenuItem()
+  selectedIndex = selectedIndex - 1
+  if selectedIndex < 1 then
+    selectedIndex = #menu.tabIndex
+  end
+  setPointerPos()
+end
+
+for f = 1, #testRunner.failedDetails do
+  local result = testRunner.failedDetails[f];
+  print(result.group .. ' > ' .. result.name)
+  print("  expected: " .. tostring(result.expected))
+  print("  actual: " .. tostring(result.actual))
+end
+
+local function createMenu(ui)
+  local box = ui.box
+  local image = ui.image
+  local text = ui.text
+
+  return box({
+    maxWidth = 380,
+    backgroundColor = gfx.kColorWhite,
+    borderRadius = 9,
     border = 2,
-    font = gfx.font.new('fonts/emerald_17')
-  },
-
-  BlockQuote = {
-    paddingLeft = 25,
-    backgroundColor = gfx.kColorWhite,
-    borderLeft = 10,
-    borderBottom = 2,
-    borderTop = 6,
-    borderRight = 4,
-    --fontFamily = playdate.graphics.font.newFamily(ctrldFontFamily)
-  },
-
-  Para = {
-    spacing = 12,
-    paddingTop = 16,
-    paddingLeft = 20,
-    --fontFamily = playdate.graphics.font.newFamily(ctrldFontFamily)
-  },
-
-  Root = {
-    maxWidth = 400,
-    backgroundColor = gfx.kColorWhite,
-    direction = playout.Vertical,
+    direction = playout.kDirectionHorizontal,
     vAlign = playout.kAlignStretch,
-    scroll = 1,
-    padding = 10,
-    spacing = 10
-  }
-}
+    shadow = 8,
+    shadowAlpha = 1 / 3
+  }, {
+    box({
+      padding = 12,
+      spacing = 10,
+      backgroundColor = gfx.kColorBlack,
+      backgroundAlpha = 7 / 8,
+      borderRadius = 9,
+      border = 2
+    }, {
+      box({
+        border = 2,
+        padding = 6,
+        borderRadius = 5,
+        backgroundColor = gfx.kColorWhite
+      }, { image(logo) }),
+      box({
+        paddingLeft = 6,
+        paddingTop = 3,
+        paddingBottom = 1,
+      }, { text("playout", { stroke = 4 }) }),
+    }),
+    box({
+      spacing = 12,
+      paddingTop = 16,
+      paddingLeft = 20,
+      hAlign = playout.kAlignStart
+    }, {
+      text("Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
+      text(testResultMessage),
+      box({
+        direction = playout.kDirectionHorizontal,
+        spacing = 12,
+        paddingLeft = 16,
+        paddingTop = 12,
+        paddingBottom = 0,
+        vAlign = playout.kAlignEnd,
+      }, {
+        box({ style = button }, { text("cancel", { id = "no", stroke = 2, tabIndex = 1 }) }),
+        box({ flex = 1 }),
+        box({ style = button }, { text("okay", { id = "yes", stroke = 2, tabIndex = 2 }) }),
+      })
+    })
+  })
+end
 
 local inputHandlers = {
-  cranked = function(change, acceleratedChange)
-    crankChange = change
-    if skipScrollTicks > 0 then
-      skipScrollTicks = skipScrollTicks - 1
-      offset = offset - previousCrankOffset
-    else
-      offset = offset - change * CRANK_SCROLL_SPEED * crankSpeedModifier
-      previousCrankOffset = change * CRANK_SCROLL_SPEED * crankSpeedModifier
+  rightButtonDown = nextMenuItem,
+  downButtonDown = nextMenuItem,
+  leftButtonDown = prevMenuItem,
+  upButtonDown = prevMenuItem,
+  AButtonDown = function()
+    local selected = menu.tabIndex[selectedIndex]
+    if selected == menu:get("yes") then
+      menuSprite:moveBy(0, 4)
+      menuSprite:update()
     end
-    -- print('offset', offset)
+    if selected == menu:get("no") then
+      menuSprite:moveBy(0, -4)
+      menuSprite:update()
+    end
+    setPointerPos()
   end
 }
 
-
-
-
 function setup()
-  playdate.inputHandlers.push(inputHandlers)
-  
-  local json_file = playdate.file.open('planning_pandoc.json', playdate.file.kFileRead)
-  local json_table = json.decodeFile(json_file)
+  -- run tests (see test.lua)
+  testRunner:run()
+  testResultMessage = "Tests: *" .. testRunner.passed .. "/" .. testRunner.total .. "* passed."
+  if testRunner.passed < testRunner.total then
+    testResultMessage = testResultMessage .. " Oops"
+  else
+    testResultMessage = testResultMessage .. " Nice!"
+  end
 
-  currentPage = MDTree.new(styles, json_table)
-  -- currentPage:build()
+  -- attach input handlers
+  playdate.inputHandlers.push(inputHandlers)
+
+  -- setup menu
+  menu = playout.tree:build(createMenu)
+  menu:computeTabIndex()
+  menuImg = menu:draw()
+  menuSprite = gfx.sprite.new(menuImg)
+  menuSprite:moveTo(200, 400)
+  menuSprite:add()
+
+  -- setup bg sprite
+  local bg = gfx.image.new("images/mountains.png")
+  gfx.sprite.setBackgroundDrawingCallback(
+    function(x, y, width, height)
+      gfx.setClipRect(x, y, width, height)
+      bg:draw(0, 0)
+      gfx.clearClipRect()
+    end
+  )
+
+  -- setup pointer
+  local pointerImg = gfx.image.new("images/pointer")
+  pointer = gfx.sprite.new(pointerImg)
+  pointer:setRotation(90)
+  pointer:setZIndex(1)
+  pointer:add()
+  setPointerPos()
+
+  -- setup pointer animation
+  pointerTimer = playdate.timer.new(500, -18, -14, playdate.easingFunctions.inOutSine)
+  pointerTimer.repeats = true
+  pointerTimer.reverses = true
+
+  -- setup menu animation
+  menuTimer = playdate.timer.new(500, 400, 100, playdate.easingFunctions.outCubic)
+  menuTimer.timerEndedCallback = setPointerPos
 end
 
 -- frame callback
 function playdate.update()
-  currentPage:update(crankChange, offset)
-end
+  if menuTimer.timeLeft > 0 then
+    menuSprite:moveTo(200, menuTimer.value)
+    menuSprite:update()
+  end
 
--- local json_file = playdate.file.open('file.json', playdate.file.kFileWrite)
--- json.encodeToFile(json_file,true, page_table)
+  pointer:moveTo(
+    pointerPos:offsetBy(pointerTimer.value, 0)
+  )
+  pointer:update()
+
+  playdate.timer.updateTimers()
+  playdate.drawFPS()
+end
 
 setup()
