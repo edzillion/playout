@@ -21,7 +21,7 @@ local button = {
   borderRadius = 12,
   border = 2,
   shadow = 3,
-  shadowAlpha = 1/4,
+  shadowAlpha = 1 / 4,
   backgroundColor = gfx.kColorWhite,
   font = fonts.bold
 }
@@ -32,9 +32,9 @@ local buttonHover = {
   borderRadius = 12,
   border = 2,
   shadow = 3,
-  shadowAlpha = 1/4,
+  shadowAlpha = 1 / 4,
   backgroundColor = gfx.kColorWhite,
-  backgroundAlpha = 1/2,
+  backgroundAlpha = 1 / 2,
   font = fonts.bold,
   paddingBottom = 5,
   shadow = 5,
@@ -58,7 +58,7 @@ local function setPointerPos()
   local menuRect = menuSprite:getBoundsRect()
 
   pointerPos = getRectAnchor(selected.rect, playout.kAnchorCenterLeft):
-    offsetBy(getRectAnchor(menuRect, playout.kAnchorTopLeft):unpack())  
+  offsetBy(getRectAnchor(menuRect, playout.kAnchorTopLeft):unpack())
 end
 
 local function nextMenuItem()
@@ -97,13 +97,13 @@ local function createMenu(ui)
     direction = playout.kDirectionHorizontal,
     vAlign = playout.kAlignStretch,
     shadow = 8,
-    shadowAlpha = 1/3
+    shadowAlpha = 1 / 3
   }, {
     box({
       padding = 12,
       spacing = 10,
       backgroundColor = gfx.kColorBlack,
-      backgroundAlpha = 7/8,
+      backgroundAlpha = 7 / 8,
       borderRadius = 9,
       border = 2
     }, {
@@ -124,7 +124,7 @@ local function createMenu(ui)
       paddingTop = 16,
       paddingLeft = 20,
       hAlign = playout.kAlignStart
-    }, { 
+    }, {
       text("Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
       text(testResultMessage),
       box({
@@ -134,10 +134,10 @@ local function createMenu(ui)
         paddingTop = 12,
         paddingBottom = 0,
         vAlign = playout.kAlignEnd,
-      }, { 
-        box({ style = button }, { text("cancel", { id = "no", stroke = 2, tabIndex = 1 } ) } ),
+      }, {
+        box({ style = button }, { text("cancel", { id = "no", stroke = 2, tabIndex = 1 }) }),
         box({ flex = 1 }),
-        box({ style = button }, { text("okay", { id = "yes", stroke = 2, tabIndex = 2 } ) } ),
+        box({ style = button }, { text("okay", { id = "yes", stroke = 2, tabIndex = 2 }) }),
       })
     })
   })
@@ -148,7 +148,7 @@ local inputHandlers = {
   downButtonDown = nextMenuItem,
   leftButtonDown = prevMenuItem,
   upButtonDown = prevMenuItem,
-  AButtonDown = function ()
+  AButtonDown = function()
     local selected = menu.tabIndex[selectedIndex]
     if selected == menu:get("yes") then
       menuSprite:moveBy(0, 4)
